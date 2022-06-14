@@ -16,7 +16,7 @@ python -m spacy download en
 wget https://www.comp.nus.edu.sg/~nlp/sw/m2scorer.tar.gz
 tar -xf m2scorer.tar.gz
 ```
-Note that you may need to customize your pytorch installation depending on your CUDA version, read more [here](https://pytorch.org/get-started/previous-versions/). The code may also work with torch < 1.9.0 as only simple pytorch functions are used, but has not been tested.
+Note that you may need to customize your pytorch installation depending on your CUDA version, read more [here](https://pytorch.org/get-started/previous-versions/). The code may also work with torch < 1.9.0 as only simple pytorch functions are used.
 
 ## Reproducing the paper's result
 For the CoNLL-2014 experiment, run: `export EXP_DIR=conll-exp` .
@@ -74,4 +74,4 @@ If you want to customize your experiment setup, please note:
 - When you run the testing, make sure you run the prediction with the correct model and correct vocab file. Both files are dependent to the base systems you are combining.
 
 ## License
-The source code and models in this repository are licensed under the Apache License Version 2.0 (see [License](./LICENSE.txt))
+The source code and models in this repository are licensed under the GNU General Public License Version 3 (see [License](./LICENSE.txt)).
