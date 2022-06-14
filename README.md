@@ -74,4 +74,4 @@ If you want to customize your experiment setup, please note:
 - When you run the testing, make sure you run the prediction with the correct model and correct vocab file. Both files are dependent to the base systems you are combining.
 
 ## License
-The source code and models in this repository are licensed under the GNU General Public License Version 3 (see [License](./LICENSE.txt)).
+The source code and models in this repository are licensed under the GNU General Public License Version 3 (see [License](./LICENSE.txt)). For commercial use of this code and models, separate commercial licensing is also available. Please contact Hwee Tou Ng (nght@comp.nus.edu.sg)
