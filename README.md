@@ -3,8 +3,8 @@
 This repository provides the code to easily combines Grammatical Error Correction (GEC) models to produce better predictions with just the models' outputs, as reported in this paper:
 
 > Frustratingly Easy System Combination for Grammatical Error Correction <br>
-> [Muhammad Reza Qorib](https://github.com/mrqorib), [Seung-Hoon Na](https://nlp.jbnu.ac.kr/~nash/faculty.html), and [Hwee Tou Ng](https://www.comp.nus.edu.sg/~nght/) <br>
-> 2022 Annual Conference of the North American Chapter of the Association for Computational Linguistics (NAACL)
+> [Muhammad Reza Qorib](https://mrqorib.github.io/), [Seung-Hoon Na](https://nlp.jbnu.ac.kr/~nash/faculty.html), and [Hwee Tou Ng](https://www.comp.nus.edu.sg/~nght/) <br>
+> 2022 Annual Conference of the North American Chapter of the Association for Computational Linguistics (NAACL) ([PDF](https://mrqorib.github.io/assets/pdf/ESC.pdf))
 
 ## Installation
 This code should be run with Python 3.6. The reason Python 3.6 is needed is because the ERRANT version that is used in the BEA-2019 shared task (v2.0.0) is not compatible with Python >= 3.7
