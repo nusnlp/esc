@@ -357,7 +357,7 @@ def eval(model, dataset, device='cpu'):
 
     return result
 
-def test(model, model_path, dataset, device, threshold=0.5):
+def test(model, model_path, dataset, device, threshold=0.5, generate_text=True):
     """
     A test function to predict the appropriate edit and apply it
     to the original sentence, resulting a corrected sentence
@@ -392,40 +392,56 @@ def test(model, model_path, dataset, device, threshold=0.5):
     all_outputs = list(zip(*all_outputs))
     all_outputs = [None if l[0] is None else torch.stack(list(l), dim=0).mean(dim=0) for l in all_outputs]
 
-    for idx, output in enumerate(all_outputs):
-        if output is None:
-            continue
-        source = raw_data[idx]['source'].split()
-        edits = raw_data[idx]['edits']
-        offset = 0
+    if generate_text:
+        for idx, output in enumerate(all_outputs):
+            if output is None:
+                continue
+            source = raw_data[idx]['source'].split()
+            edits = raw_data[idx]['edits']
+            offset = 0
+            edits_to_apply = []
+            for edit, pred in zip(edits.keys(), output):
+                if pred >= threshold:
+                    e_start, e_end, rep_token = edit
+                    edits_to_apply.append((e_start, e_end, rep_token, pred))
+
+            edits_to_apply = sorted(edits_to_apply, key=lambda x: x[3], reverse=True)
+            filtered_edits = []
+            multiple_insertion = lambda x, y: x[0] == x[1] == y[0] == y[1]
+            intersecting_range = lambda x, y: (x[0] <= y[0] < x[1] and not x[0] == y[1]) or \
+                                                (y[0] <= x[0] < y[1] and not y[0] == x[1])
+        
+            for edit in edits_to_apply:
+                eligible = True
+                for selected_edit in filtered_edits:
+                    if multiple_insertion(edit, selected_edit) \
+                        or intersecting_range(edit, selected_edit):
+                        eligible = False
+                if eligible:
+                    filtered_edits.append(edit)
+            filtered_edits = sorted(filtered_edits)
+
+            for edit in filtered_edits:
+                e_start, e_end, rep_token, pred = edit
+                e_cor = rep_token.split()
+                len_cor = 0 if len(rep_token) == 0 else len(e_cor)
+                source[e_start + offset:e_end + offset] = e_cor
+                offset = offset - (e_end - e_start) + len_cor
+            result[idx] = ' '.join(source)
+    else:
         edits_to_apply = []
-        for edit, pred in zip(edits.keys(), output):
-            if pred >= threshold:
+        for idx, output in enumerate(all_outputs):
+            edits = raw_data[idx]['edits']
+            offset = 0
+            edits_to_apply = []
+            if output is None:
+                result[idx] = []
+                continue
+            for edit, pred in zip(edits.keys(), output):
                 e_start, e_end, rep_token = edit
-                edits_to_apply.append((e_start, e_end, rep_token, pred))
+                edits_to_apply.append((e_start, e_end, rep_token, pred.item()))
 
-        edits_to_apply = sorted(edits_to_apply, key=lambda x: x[3], reverse=True)
-        filtered_edits = []
-        multiple_insertion = lambda x, y: x[0] == x[1] == y[0] == y[1]
-        intersecting_range = lambda x, y: (x[0] <= y[0] < x[1] and not x[0] == y[1]) or \
-                                            (y[0] <= x[0] < y[1] and not y[0] == x[1])
-        for edit in edits_to_apply:
-            eligible = True
-            for selected_edit in filtered_edits:
-                if multiple_insertion(edit, selected_edit) \
-                    or intersecting_range(edit, selected_edit):
-                    eligible = False
-            if eligible:
-                filtered_edits.append(edit)
-        filtered_edits = sorted(filtered_edits)
-
-        for edit in filtered_edits:
-            e_start, e_end, rep_token, pred = edit
-            e_cor = rep_token.split()
-            len_cor = 0 if len(rep_token) == 0 else len(e_cor)
-            source[e_start + offset:e_end + offset] = e_cor
-            offset = offset - (e_end - e_start) + len_cor
-        result[idx] = ' '.join(source)
+            result[idx] = edits_to_apply
 
     return result
 
@@ -500,7 +516,7 @@ def main(args):
         train(model, train_dataset, _BATCH_SIZE, _LR, args.weight_decay, best_epoch,
                 device, model_path, save_last=True)
         print('Finished training.')
-    elif args.test:
+    elif args.test or args.score:
         with open(args.vocab_path, 'r', encoding='utf-8') as f:
             vocab = json.load(f)
         test_dataset = M2Dataset(args.m2_dir,
@@ -512,9 +528,13 @@ def main(args):
                                 )
         feature_size = test_dataset.feature_size()
         model = Model(feature_size).to(device)
-        sentences = test(model, args.model_path, test_dataset, device, threshold=args.threshold)
+        results = test(model, args.model_path, test_dataset, device, threshold=args.threshold,
+                        generate_text=args.test)
+        if args.score:
+            results = [json.dumps(r) for r in results]
+        
         with open(args.output_path, 'w', encoding='utf-8') as out:
-            out.write('\n'.join(sentences))
+            out.write('\n'.join(results))
 
 
 def get_arguments():
@@ -531,6 +551,7 @@ def get_arguments():
     parser.add_argument('--upsample', type=str, default=None, help='up-sample ratio of class 0:class 1')
     parser.add_argument('--train', default=False, action='store_true', help='train the model')
     parser.add_argument('--test', default=False, action='store_true', help='test the model')
+    parser.add_argument('--score', default=False, action='store_true', help='produce a score for each edit')
     parser.add_argument('--target_path', help='path to the target file during training')
     parser.add_argument('--vocab_path', default='vocab.idx', help='path to the vocab file')
     parser.add_argument('--model_path', required=True, help='path to the model directory')
